@@ -27,6 +27,7 @@ import ConversationView from "./pages/ConversationView";
 import NotFound from "./pages/NotFound";
 import Waitlist from "./pages/Waitlist";
 import DemoLogin from "./pages/DemoLogin";
+import Contact from "./pages/Contact";
 import DemoOnlyRedirect from "./components/DemoOnlyRedirect";
 import { WaitlistShortcut } from "./components/WaitlistShortcut";
 
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/login" element={<DemoOnlyRedirect />} />
             <Route path="/demo-login" element={<DemoLogin />} />
             <Route path="/waitlist" element={<Waitlist />} />
+            <Route path="/contact" element={<Contact />} />
             
             <Route 
               path="/onboarding" 
