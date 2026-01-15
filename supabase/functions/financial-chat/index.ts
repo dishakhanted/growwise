@@ -159,11 +159,40 @@ const parseDecisionFromMessage = (content: string): ParsedDecision => {
   return { isDecision: false };
 };
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+const DEFAULT_ALLOWED_ORIGINS = [
+  // Local dev
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  // Production
+  "https://poonji.ai",
+  "https://www.poonji.ai",
+];
+
+// Comma-separated list of allowed origins, e.g. "https://app.example.com,https://staging.example.com"
+const ENV_ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const ALLOWED_ORIGINS = Array.from(new Set([...ENV_ALLOWED_ORIGINS, ...DEFAULT_ALLOWED_ORIGINS]));
+
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.includes(origin);
+}
+
+function buildCorsHeaders(origin: string | null): Record<string, string> {
+  const varyHeader = { Vary: "Origin" };
+  if (isOriginAllowed(origin)) {
+    return {
+      ...varyHeader,
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+    };
+  }
+  return varyHeader;
+}
 
 /**
  * Creates a Supabase client with service role for database operations
@@ -463,9 +492,23 @@ async function handleGoalUpdate(
 }
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = buildCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
-    logDebug('OPTIONS request received');
+    logDebug('OPTIONS request received', { origin, allowed: isOriginAllowed(origin) });
+    if (!isOriginAllowed(origin)) {
+      return new Response(null, { status: 403, headers: corsHeaders });
+    }
     return new Response(null, { headers: corsHeaders });
+  }
+
+  if (!isOriginAllowed(origin)) {
+    logWarn('Blocked request from disallowed origin', { origin });
+    return new Response(
+      JSON.stringify({ error: 'Origin not allowed' }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
   const requestId = generateRequestId();
