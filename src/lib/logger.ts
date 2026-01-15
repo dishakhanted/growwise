@@ -18,8 +18,7 @@ class Logger {
     // Enable debug logs in development or if explicitly enabled via env var
     this.isDebugEnabled = 
       this.isDevelopment || 
-      import.meta.env.VITE_DEBUG_LOGGING === 'true' ||
-      localStorage.getItem('poonji_debug') === 'true';
+      import.meta.env.VITE_DEBUG_LOGGING === 'true';
   }
 
   private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
