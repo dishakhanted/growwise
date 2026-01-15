@@ -24,6 +24,7 @@ import type { DemoProfile } from './types.ts';
 import { getCachedSummary, getCachedSummaryExpired, getCachedSuggestions, getCachedSuggestionResponse, setCachedSummary, setCachedSuggestionResponse } from './cacheUtils.ts';
 import { parseAndValidateRequest, ValidationError } from './requestValidation.ts';
 import { invalidateForUser } from './cacheInvalidation.ts';
+import { isMessageSafe } from './safety.ts';
 
 // ============= Structured Logging Helpers =============
 
@@ -913,6 +914,16 @@ serve(async (req) => {
       if (parsed.isDecision) {
         decision = parsed;
       }
+    }
+
+    // Strict safety: validate last user message for unsafe content
+    const lastMessageContent = messages?.[messages.length - 1]?.content || '';
+    if (!isMessageSafe(lastMessageContent)) {
+      logWarn('Blocked unsafe user message', { requestId });
+      return new Response(
+        JSON.stringify({ error: 'Message rejected by safety filters', requestId }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Handle suggestion decisions
