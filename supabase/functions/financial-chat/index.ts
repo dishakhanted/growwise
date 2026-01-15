@@ -194,6 +194,35 @@ function buildCorsHeaders(origin: string | null): Record<string, string> {
   return varyHeader;
 }
 
+// -------- Rate limiting (simple in-memory bucket; per-instance) --------
+const RATE_LIMIT_WINDOW_MS = parseInt(Deno.env.get("RATE_LIMIT_WINDOW_MS") || "60000", 10); // 60s default
+const RATE_LIMIT_MAX_REQUESTS = parseInt(Deno.env.get("RATE_LIMIT_MAX_REQUESTS") || "30", 10); // 30 req / window
+const rateLimitStore: Map<string, number[]> = new Map(); // key -> timestamps
+
+function getClientIdentifier(req: Request): string {
+  return (
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-real-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-client-info") ||
+    "unknown"
+  );
+}
+
+function isRateLimited(clientId: string, now: number): boolean {
+  if (!clientId) return false;
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+  const timestamps = rateLimitStore.get(clientId) || [];
+  const recent = timestamps.filter((ts) => ts > windowStart);
+  if (recent.length >= RATE_LIMIT_MAX_REQUESTS) {
+    rateLimitStore.set(clientId, recent); // prune
+    return true;
+  }
+  recent.push(now);
+  rateLimitStore.set(clientId, recent);
+  return false;
+}
+
 /**
  * Creates a Supabase client with service role for database operations
  */
@@ -513,14 +542,25 @@ serve(async (req) => {
 
   const requestId = generateRequestId();
   const startTime = Date.now();
+  const clientId = getClientIdentifier(req);
   let contextType = 'unknown';
   let userId = 'anonymous';
   let isDemo = false;
+
+  if (isRateLimited(clientId, startTime)) {
+    logWarn('Rate limit exceeded', { requestId, clientId, origin });
+    return new Response(
+      JSON.stringify({ error: 'Too many requests. Please slow down.', requestId }),
+      { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 
   logInfo('Request received', {
     requestId,
     method: req.method,
     url: req.url,
+    origin,
+    clientId,
   });
 
   // Check if this is a summary request (cached endpoint)
@@ -587,7 +627,7 @@ serve(async (req) => {
           requestId,
           error: authError instanceof Error ? authError.message : 'Unknown error',
         });
-        // Continue without userId - will use contextData fallback
+        // Continue without userId - will enforce auth below
       }
     } else if (isDemo) {
       userId = `demo:${demoProfileId}`;
@@ -595,6 +635,33 @@ serve(async (req) => {
         requestId,
         demoProfileId,
       });
+    }
+
+    // Require auth for non-demo requests
+    if (!isDemo && !authenticatedUserId) {
+      logWarn('Authentication required for non-demo request', {
+        requestId,
+        origin,
+        hasAuthHeader: !!authHeader,
+      });
+
+      const endTime = Date.now();
+      logRequest({
+        requestId,
+        contextType,
+        userId,
+        isDemo,
+        startTime,
+        endTime,
+        durationMs: endTime - startTime,
+        status: 'error',
+        error: { message: 'Authentication required', code: '401' },
+      });
+
+      return new Response(
+        JSON.stringify({ error: 'Authentication required', requestId }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Handle suggestions request (cached suggestions for initial chat load)
