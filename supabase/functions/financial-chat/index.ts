@@ -789,6 +789,7 @@ serve(async (req) => {
             summary: cachedSuggestions.summary,
             suggestions: cachedSuggestions.suggestions,
             cached: true,
+            requestId,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -804,6 +805,7 @@ serve(async (req) => {
         JSON.stringify({
           message: null,
           cached: false,
+          requestId,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -859,6 +861,7 @@ serve(async (req) => {
             message: cachedSummary.summary_text,
             cached: true,
             cachedAt: cachedSummary.created_at,
+            requestId,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -996,6 +999,7 @@ serve(async (req) => {
                 message: cachedResponse,
                 cached: true,
                 type: 'task_completed',
+                requestId,
               }),
               { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
             );
@@ -1097,10 +1101,12 @@ serve(async (req) => {
         updatedDemoProfile?: DemoProfile;
         type?: string;
         demo?: boolean;
+        requestId?: string;
       } = {
         message: confirmationResult.message,
         type: 'task_completed',
         demo: isDemo || undefined,
+        requestId,
       };
       
       if (confirmationResult.updatedNetWorth !== undefined) {
@@ -1365,6 +1371,7 @@ serve(async (req) => {
       if (isSuggestionContext && !parsedResponse) {
         responseBody.cached = false;
       }
+      responseBody.requestId = requestId;
 
       // If we expected structured suggestions but could not parse, avoid caching
       const shouldSkipCaching = isSuggestionContext && !parsedResponse;
@@ -1502,6 +1509,7 @@ serve(async (req) => {
                 cached: true,
                 cachedAt: expiredCache.created_at,
                 expired: true, // Mark as expired but returned as fallback
+            requestId,
               }),
               { headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
