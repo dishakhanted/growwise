@@ -22,6 +22,7 @@ import { DECISION_HANDLING_PROMPT, SUMMARY_AND_SUGGESTIONS_SPEC } from './prompt
 import { applySuggestionEffect } from './effects.ts';
 import type { DemoProfile } from './types.ts';
 import { getCachedSummary, getCachedSummaryExpired, getCachedSuggestions, getCachedSuggestionResponse, setCachedSummary, setCachedSuggestionResponse } from './cacheUtils.ts';
+import { parseAndValidateRequest, ValidationError } from './requestValidation.ts';
 
 // ============= Structured Logging Helpers =============
 
@@ -241,6 +242,7 @@ function isRateLimited(clientId: string, now: number): boolean {
   rateLimitStore.set(clientId, recent);
   return false;
 }
+
 
 /**
  * Creates a Supabase client with service role for database operations
@@ -589,7 +591,26 @@ serve(async (req) => {
   let isSuggestionsRequest = false;
 
   try {
-    const requestBody = await req.json();
+    const rawBody = await req.text();
+
+    let requestBody: any;
+    try {
+      requestBody = parseAndValidateRequest(rawBody);
+    } catch (parseError) {
+      if (parseError instanceof ValidationError) {
+        logWarn('Request validation failed', { requestId, origin, message: parseError.message });
+        return new Response(
+          JSON.stringify({ error: parseError.message, requestId }),
+          { status: parseError.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      logWarn('Unexpected validation failure', { requestId, origin });
+      return new Response(
+        JSON.stringify({ error: 'Invalid request', requestId }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { messages, conversationId, contextType: reqContextType, contextData, demo, viewMode, endpoint } = requestBody;
     contextType = reqContextType || 'unknown';
     isDemo = demo?.demoProfileId ? true : false;
