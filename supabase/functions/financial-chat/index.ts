@@ -23,6 +23,7 @@ import { applySuggestionEffect } from './effects.ts';
 import type { DemoProfile } from './types.ts';
 import { getCachedSummary, getCachedSummaryExpired, getCachedSuggestions, getCachedSuggestionResponse, setCachedSummary, setCachedSuggestionResponse } from './cacheUtils.ts';
 import { parseAndValidateRequest, ValidationError } from './requestValidation.ts';
+import { invalidateForUser } from './cacheInvalidation.ts';
 
 // ============= Structured Logging Helpers =============
 
@@ -1004,6 +1005,16 @@ serve(async (req) => {
         demoProfileState
       );
 
+      // Invalidate cache for authenticated users after side-effects
+      if (!isDemo && authenticatedUserId) {
+        invalidateForUser(authenticatedUserId, null).catch((err) => {
+          logWarn('Cache invalidation failed after decision', {
+            requestId,
+            error: err instanceof Error ? err.message : 'Unknown error',
+          });
+        });
+      }
+
       // Cache the response if we have viewMode and suggestion ID
       if (suggestionViewMode && contextData && confirmationResult.message) {
         // Find suggestion ID again (in case it wasn't found earlier)
@@ -1105,6 +1116,15 @@ serve(async (req) => {
       );
       
       if (goalUpdateResult.updated) {
+        if (authenticatedUserId) {
+          invalidateForUser(authenticatedUserId, null).catch((err) => {
+            logWarn('Cache invalidation failed after goal update', {
+              requestId,
+              error: err instanceof Error ? err.message : 'Unknown error',
+            });
+          });
+        }
+
         const endTime = Date.now();
         logRequest({
           requestId,

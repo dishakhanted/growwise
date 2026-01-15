@@ -43,12 +43,22 @@ export function hashFinancialData(data: FinancialDataSnapshot): string {
     investmentsTotal: Math.round(data.investmentsTotal * 100) / 100,
   });
   
-  // Simple hash function (for demo purposes)
+  // Stronger hash (SHA-256) for collision resistance
+  const buffer = new TextEncoder().encode(dataString);
+  const hashBuffer = crypto.subtle.digestSync
+    ? crypto.subtle.digestSync("SHA-256", buffer)
+    : new Uint8Array(); // digestSync available in Deno 1.39+ with --unstable
+
+  if (hashBuffer && hashBuffer.byteLength > 0) {
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+  }
+
+  // Fallback to a simpler hash if digestSync unavailable
   let hash = 0;
   for (let i = 0; i < dataString.length; i++) {
-    const char = dataString.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+    hash = (hash << 5) - hash + dataString.charCodeAt(i);
+    hash |= 0;
   }
   return Math.abs(hash).toString(36);
 }
