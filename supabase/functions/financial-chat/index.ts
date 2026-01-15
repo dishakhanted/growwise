@@ -194,6 +194,25 @@ function buildCorsHeaders(origin: string | null): Record<string, string> {
   return varyHeader;
 }
 
+// -------- Environment validation --------
+const REQUIRED_ENV_VARS = [
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "GEMINI_API_KEY",
+  "GEMINI_MODEL_MAIN",
+];
+
+function validateRequiredEnv() {
+  const missing = REQUIRED_ENV_VARS.filter((key) => !Deno.env.get(key));
+  if (missing.length > 0) {
+    const message = `Missing required environment variables: ${missing.join(", ")}`;
+    console.error("[financial-chat] Env validation failed:", message);
+    throw new Error(message);
+  }
+}
+
+validateRequiredEnv();
+
 // -------- Rate limiting (simple in-memory bucket; per-instance) --------
 const RATE_LIMIT_WINDOW_MS = parseInt(Deno.env.get("RATE_LIMIT_WINDOW_MS") || "60000", 10); // 60s default
 const RATE_LIMIT_MAX_REQUESTS = parseInt(Deno.env.get("RATE_LIMIT_MAX_REQUESTS") || "30", 10); // 30 req / window
