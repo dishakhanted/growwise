@@ -1350,12 +1350,19 @@ serve(async (req) => {
         responseBody.summary = parsedResponse.summary;
         responseBody.suggestions = parsedResponse.suggestions;
       }
+      // If parse failed in a suggestions context, mark as not cached
+      if (isSuggestionContext && !parsedResponse) {
+        responseBody.cached = false;
+      }
+
+      // If we expected structured suggestions but could not parse, avoid caching
+      const shouldSkipCaching = isSuggestionContext && !parsedResponse;
 
       // Cache summary and suggestions
       // IMPORTANT: Only cache successful AI responses, never error messages or defaults
       // Use effectiveViewMode (from request body or contextData) for caching
       const cacheViewMode = effectiveViewMode || viewMode;
-      if (contextData && cacheViewMode && (isSummaryRequest || (isSuggestionContext && parsedResponse))) {
+      if (!shouldSkipCaching && contextData && cacheViewMode && (isSummaryRequest || (isSuggestionContext && parsedResponse))) {
         const summaryText = parsedResponse?.summary || modelResponse;
         const suggestions = parsedResponse?.suggestions || [];
         
@@ -1378,7 +1385,7 @@ serve(async (req) => {
           // Cache asynchronously (don't block response)
           // For summary requests: cache summary only (no suggestions)
           // For suggestion contexts: cache summary + suggestions
-          const shouldCacheSuggestions = isSuggestionContext && suggestions.length > 0 && !isSummaryRequest;
+          const shouldCacheSuggestions = isSuggestionContext && parsedResponse && suggestions.length > 0 && !isSummaryRequest;
           
           setCachedSummary(
             supabase,
