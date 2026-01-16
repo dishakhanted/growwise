@@ -128,6 +128,10 @@ export const useFinancialChat = ({
     return title;
   };
 
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  const MAX_RETRIES = parseInt(import.meta.env.VITE_CHAT_RETRIES || "2", 10);
+  const RETRY_BASE_DELAY_MS = parseInt(import.meta.env.VITE_CHAT_RETRY_BASE_DELAY_MS || "500", 10);
+
   const saveConversation = useCallback(
     async (messages: Message[], title?: string) => {
       try {
@@ -253,15 +257,43 @@ export const useFinancialChat = ({
           conversationId: convId,
         });
 
-        // Call edge function with streaming
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/financial-chat`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          },
-          body: JSON.stringify(requestBody),
-        });
+        const doRequest = async () =>
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/financial-chat`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+        let response: Response | null = null;
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            response = await doRequest();
+            if (response.ok || response.status === 400 || response.status === 401 || response.status === 422) {
+              break; // do not retry on client or auth errors
+            }
+            if (attempt < MAX_RETRIES) {
+              const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+              logger.api('Retrying financial-chat request', { attempt: attempt + 1, delay, status: response.status });
+              await sleep(delay);
+              continue;
+            }
+            break;
+          } catch (err) {
+            if (attempt < MAX_RETRIES) {
+              const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+              logger.api('Retrying financial-chat request after error', { attempt: attempt + 1, delay, error: (err as Error)?.message });
+              await sleep(delay);
+              continue;
+            }
+            throw err;
+          }
+        }
+        if (!response) {
+          throw new Error("No response from server");
+        }
 
         logger.api('Response received', {
           status: response.status,
@@ -284,6 +316,9 @@ export const useFinancialChat = ({
           }
           if (response.status === 402) {
             throw new Error("Service temporarily unavailable. Please try again later.");
+          }
+          if (response.status === 422) {
+            throw new Error("Your last message was blocked by safety filters. Please rephrase.");
           }
           if (response.status >= 500) {
             throw new Error("Something went wrong on our end. Please try again.");

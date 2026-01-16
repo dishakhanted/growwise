@@ -39,7 +39,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
 
       if (session?.user) {
-        logger.session('Supabase auth session found', { userId: session.user.id, email: session.user.email });
+        logger.session('Supabase auth session found', { user: true });
         setSessionState((prev) => ({
           user: session.user,
           isLoading: false,
@@ -62,7 +62,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       logger.session('Auth state change event', { event, hasSession: !!session, hasUser: !!session?.user });
 
       if (session?.user) {
-        logger.session('User authenticated via state change', { userId: session.user.id, email: session.user.email });
+        logger.session('User authenticated via state change', { user: true });
         setSessionState((prev) => ({
           user: session.user,
           isLoading: false,

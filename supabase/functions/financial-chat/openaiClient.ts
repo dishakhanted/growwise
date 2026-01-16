@@ -117,12 +117,9 @@ export async function callChatModel({
     });
 
     if (!resp.ok) {
-      const errorText = await resp.text().catch(() => "Unknown error");
-      console.error(
-        `[openaiClient] Gemini API error: ${resp.status} ${resp.statusText}`,
-        errorText,
-      );
-      throw new Error(`Gemini API error: ${resp.status} - ${errorText.substring(0, 200)}`);
+      // Avoid logging full bodies to reduce PII/secret exposure
+      console.error(`[openaiClient] Gemini API error: ${resp.status} ${resp.statusText}`);
+      throw new Error(`Gemini API error: ${resp.status}`);
     }
 
     const json = await resp.json();
@@ -213,7 +210,7 @@ export async function callChatModel({
     );
     return content;
   } catch (error) {
-    console.error("[openaiClient] Gemini API error:", error);
+    console.error("[openaiClient] Gemini API error:", error instanceof Error ? error.message : String(error));
     // Re-throw with context if it's not already an Error
     if (error instanceof Error) {
       throw error;
