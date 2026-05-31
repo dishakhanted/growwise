@@ -1,3 +1,5 @@
+> **Legacy branch:** Preserves the original Poonji consumer fintech product (AI personal finance coach / Runwise Invest mock) before the institutional prediction-markets rebrand on `main` (June 2025). Use `main` for the current Poonji institutional landing site.
+
 # Runwise Invest Mock
 
 A financial management demo application with hybrid AI architecture for instant dashboard summaries and real-time interactive AI responses.
