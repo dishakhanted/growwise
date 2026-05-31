@@ -1,649 +1,379 @@
-import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { WealthChart } from "@/components/WealthChart";
-import { Check, X, Menu } from "lucide-react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { Logo } from "@/components/Logo";
+import { AccessRequestForm } from "@/components/AccessRequestForm";
+import { HeroNetworkGraph } from "@/components/landing/HeroNetworkGraph";
+import { EventTicker } from "@/components/landing/EventTicker";
+import { useScrollProgress } from "@/hooks/useScrollProgress";
+import { useInView } from "@/hooks/useInView";
+import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import homeHeroImage from "@/assets/home-hero.png";
-import howItWorksImage from "@/assets/how-it-works.png";
-import oneTapExecutionImage from "@/assets/one-tap-execution.png";
-import builtForTrustImage from "@/assets/built-for-trust.png";
-import whyDidWeCreateItImage from "@/assets/why-did-we-create-it.jpg";
+import "@/landing/landing.css";
+
+const BondFlowDiagram = lazy(() =>
+  import("@/components/landing/BondFlowDiagram").then((m) => ({ default: m.BondFlowDiagram })),
+);
+const MetricCounters = lazy(() =>
+  import("@/components/landing/MetricCounters").then((m) => ({ default: m.MetricCounters })),
+);
+const TeamCard = lazy(() =>
+  import("@/components/landing/TeamCard").then((m) => ({ default: m.TeamCard })),
+);
+
+const solutionTiles = [
+  {
+    title: "Principal Protected",
+    description:
+      "Event exposure without directional risk to principal. Structured as bonds, not derivatives.",
+  },
+  {
+    title: "Fits Existing Frameworks",
+    description:
+      "Usable for margin, repo, collateral, and balance sheet. No regulatory carve-outs needed.",
+  },
+  {
+    title: "Event-Linked Coupons",
+    description:
+      "Macro and geopolitical outcomes directly trigger the coupon. Trade the event, not the sentiment.",
+  },
+];
+
+const team = [
+  {
+    name: "Gunjan P Khanted",
+    role: "CEO",
+    bio: "Structured and sold FX and rates products to sovereign funds, hedge funds, and insurance companies across APAC at Deutsche Bank and HSBC. SRCC alumnus.",
+    linkedIn: "https://linkedin.com/in/gunjankhanted",
+  },
+  {
+    name: "Disha P Khanted",
+    role: "CTO",
+    bio: "Data engineer and AI/ML practitioner. Built large-scale data infrastructure and machine learning systems. Columbia University, MS.",
+    linkedIn: "https://linkedin.com/in/dishakhanted",
+  },
+];
+
+const scrollToSection = (id: string) => {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
+const SectionReveal = ({
+  id,
+  children,
+  className = "",
+}: {
+  id?: string;
+  children: ReactNode;
+  className?: string;
+}) => {
+  const { ref, inView } = useInView<HTMLElement>({ threshold: 0.12 });
+  const reducedMotion = usePrefersReducedMotion();
+  const visible = inView || reducedMotion;
+
+  return (
+    <section
+      id={id}
+      ref={ref}
+      className={`landing-section-lazy transition-all duration-700 ${
+        visible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+      } ${className}`}
+    >
+      {children}
+    </section>
+  );
+};
 
 const Landing = () => {
-  const navigate = useNavigate();
-  const [activeGraph, setActiveGraph] = useState(0);
+  const progress = useScrollProgress();
+  const [navScrolled, setNavScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const graphRefs = useRef<(HTMLDivElement | null)[]>([]);
   const isMobile = useIsMobile();
 
-  const menuItems = [
-    { id: "home", label: "Home" },
-    { id: "what-is-poonji", label: "What is Poonji" },
-    { id: "how-it-works", label: "How it works?" },
-    { id: "why-we-created-it", label: "Why did we create it?" },
-    { id: "contact-us", label: "Contact Us" },
-  ];
-
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-      setMobileMenuOpen(false);
-    }
-  };
-
-  const graphs = [
-    {
-      id: 2,
-      title: "Smart suggestions you can act on",
-      subtitle: "Poonji turns your finances into clear actions you can approve.",
-      renderVisual: () => (
-        <div className="space-y-3 mt-6 w-full max-w-md">
-          {[
-            {
-              title: "Complete emergency fund goal",
-              description: "3 steps · Est. +$6.5K safety",
-            },
-            {
-              title: "Rebalance investments for goals",
-              description: "Auto-approve in 1 tap",
-            },
-          ].map((suggestion) => (
-            <div
-              key={suggestion.title}
-              className="bg-card rounded-lg p-3 border border-border shadow-sm"
-            >
-              <p className="text-sm font-medium mb-1 text-foreground">{suggestion.title}</p>
-              <p className="text-xs text-foreground mb-3">{suggestion.description}</p>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <Button
-                  size="sm"
-                  variant="success"
-                  className="rounded-full px-4 h-8"
-                >
-                  <Check className="h-3 w-3 mr-1" />
-                  Approve
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full px-4 h-8"
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Deny
-                </Button>
-                <Button
-                  size="sm"
-                  variant="link"
-                  className="p-0 h-auto"
-                >
-                  Know more
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    {
-      id: 3,
-      title: "Progress toward your goals",
-      subtitle: "Track how each decision moves you closer to what you care about.",
-      renderVisual: () => (
-        <div className="flex flex-col gap-4 mt-6">
-          {[
-            { label: "Emergency Fund", percent: 95, tone: "bg-emerald-500" },
-            { label: "Down payment", percent: 40, tone: "bg-blue-500" },
-          ].map((goal) => (
-            <div
-              key={goal.label}
-              className="rounded-2xl border bg-card p-4 shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-foreground">{goal.label}</div>
-                <div className="text-sm text-muted-foreground">{goal.percent}%</div>
-              </div>
-              <div className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden">
-                <div
-                  className={`h-full ${goal.tone}`}
-                  style={{ width: `${goal.percent}%` }}
-                />
-              </div>
-              <div className="text-xs text-muted-foreground mt-2">
-                Updated after your latest decision
-              </div>
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    {
-      id: 0,
-      title: "AI edge",
-      subtitle: "for your wealth building.",
-      renderVisual: () => (
-        <WealthChart currentAmount="$237,672" futureAmount="$1.3M net worth at 65" />
-      ),
-    },
-    {
-      id: 1,
-      title: "All your money in one place",
-      subtitle: "See checking, savings, investments, and debt in one clear view.",
-      renderVisual: () => (
-        <div className="flex flex-col gap-3 mt-6 w-full max-w-md">
-          {[
-            { label: "Checking · $4,250", accent: "bg-primary/15 border-primary/30" },
-            { label: "Savings · $28,500", accent: "bg-secondary/40 border-secondary/60" },
-            { label: "401(k) · $73,200", accent: "bg-muted/60 border-muted-foreground/20" },
-          ].map((card) => (
-            <div
-              key={card.label}
-              className={`rounded-2xl border px-4 py-4 shadow-sm ${card.accent}`}
-            >
-              <div className="text-lg font-semibold text-foreground">{card.label}</div>
-              <div className="text-sm text-muted-foreground mt-1">Updated just now</div>
-            </div>
-          ))}
-        </div>
-      ),
-    },
-  ];
-
-  const scrollToGraph = (index: number) => {
-    setActiveGraph(index);
-    const graphElement = graphRefs.current[index];
-    
-    if (graphElement) {
-      // Always use horizontal scroll
-      graphElement.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
-    }
-  };
+  useEffect(() => {
+    const onScroll = () => setNavScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    // Set each graph width to match container width
-    const updateGraphWidths = () => {
-      const containerWidth = container.offsetWidth;
-      graphRefs.current.forEach((ref) => {
-        if (ref) {
-          ref.style.width = `${containerWidth}px`;
-        }
-      });
-    };
-
-    updateGraphWidths();
-    window.addEventListener("resize", updateGraphWidths);
-
-    const handleScroll = () => {
-      const containerRect = container.getBoundingClientRect();
-      
-      // For horizontal scroll, find which graph is most visible
-      let closestIndex = 0;
-      let closestDistance = Infinity;
-      
-      graphRefs.current.forEach((ref, index) => {
-        if (ref) {
-          const rect = ref.getBoundingClientRect();
-          const distance = Math.abs(rect.left - containerRect.left);
-          if (distance < closestDistance) {
-            closestDistance = distance;
-            closestIndex = index;
-          }
-        }
-      });
-      
-      setActiveGraph(closestIndex);
-    };
-
-    container.addEventListener("scroll", handleScroll);
+    document.documentElement.style.backgroundColor = "#0a0a0f";
     return () => {
-      container.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", updateGraphWidths);
+      document.documentElement.style.backgroundColor = "";
     };
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Sticky Header with Logo and Menu */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <Logo className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14" />
-              <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Poonji</span>
-            </div>
+    <div className="landing-page min-h-screen">
+      {/* Scroll progress */}
+      <div className="landing-scroll-progress" aria-hidden>
+        <div
+          className="landing-scroll-progress__bar"
+          style={{ width: `${progress * 100}%` }}
+        />
+      </div>
 
-            {/* Desktop Menu */}
-            {!isMobile && (
-              <nav className="flex items-center gap-6 lg:gap-8">
-                {menuItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => scrollToSection(item.id)}
-                    className="text-sm lg:text-base font-medium text-foreground hover:text-primary transition-colors"
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
-            )}
+      {/* Nav */}
+      <header
+        className={`landing-reveal-nav fixed top-[2px] z-50 w-full transition-all duration-300 ${
+          navScrolled ? "landing-nav-scrolled" : "bg-transparent"
+        }`}
+      >
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:h-[4.5rem] lg:px-8">
+          <button
+            type="button"
+            onClick={() => scrollToSection("hero")}
+            className="flex items-center gap-3"
+            aria-label="Poonji home"
+          >
+            <Logo className="h-9 w-9 sm:h-10 sm:w-10" />
+            <span className="font-mono text-sm tracking-tight text-[var(--landing-text)] sm:text-base">
+              poonji.ai
+            </span>
+          </button>
 
-            {/* Mobile Hamburger Menu */}
+          <div className="flex items-center gap-3">
             {isMobile && (
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="lg:hidden">
-                    <Menu className="h-6 w-6" />
-                    <span className="sr-only">Toggle menu</span>
-                  </Button>
+                  <button
+                    type="button"
+                    className="landing-ghost-btn flex h-10 w-10 items-center justify-center rounded-sm"
+                    aria-label="Open menu"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                  <nav className="flex flex-col gap-4 mt-8">
-                    {menuItems.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => scrollToSection(item.id)}
-                        className="text-left text-lg font-medium text-foreground hover:text-primary transition-colors py-2"
-                      >
-                        {item.label}
-                      </button>
-                    ))}
+                <SheetContent
+                  side="right"
+                  className="border-[hsl(var(--primary)/0.2)] bg-[#0a0a0f] text-[var(--landing-text)]"
+                >
+                  <nav className="mt-8 flex flex-col gap-2">
+                    {["problem", "solution", "how-it-works", "why-poonji", "team", "request-access"].map(
+                      (id) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => {
+                            scrollToSection(id);
+                            setMobileMenuOpen(false);
+                          }}
+                          className="py-3 text-left font-mono text-sm uppercase tracking-wider text-[var(--landing-text-muted)] hover:text-[hsl(var(--accent))]"
+                        >
+                          {id.replace(/-/g, " ")}
+                        </button>
+                      ),
+                    )}
                   </nav>
                 </SheetContent>
               </Sheet>
             )}
+
+            <button
+              type="button"
+              onClick={() => scrollToSection("request-access")}
+              className="landing-ghost-btn rounded-sm px-4 py-2 font-mono text-xs uppercase tracking-wider sm:px-5 sm:py-2.5 sm:text-sm"
+            >
+              Request Access
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Home Section */}
-      <section id="home" className="pt-8">
-        <div className="flex flex-col lg:flex-row px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 max-w-7xl mx-auto w-full gap-8 lg:gap-12">
-        {/* Left Column - Text Content (on desktop) */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center text-center lg:text-left order-1">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-foreground">
-            Your AI powered
-            <br />
-            Personal Financial Advisor
-          </h1>
-          
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-foreground/80 mb-6 sm:mb-8 lg:mb-12 leading-relaxed">
-            From student loans to investing to life goals, Poonji is an AI powered life coach that provides personalised guidance to help you plan, achieve and execute your financial goals with confidence and ease.
-          </p>
+      <main>
+        {/* Hero */}
+        <section
+          id="hero"
+          className="landing-grid-texture relative min-h-[92vh] overflow-hidden border-b border-[hsl(var(--primary)/0.15)] pt-20"
+        >
+          <HeroNetworkGraph />
 
-          {/* Buttons - Stack on mobile, side by side on larger screens */}
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-4 w-full sm:w-auto justify-center lg:justify-start">
-            <Button
-              onClick={() => navigate("/demo-login")}
-              variant="outline"
-              className="w-full h-14 text-lg rounded-2xl border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              Try Demo
-            </Button>
-            <Button
-              variant="default"
-              onClick={() => navigate("/waitlist")}
-              className="w-full h-14 text-lg rounded-2xl"
-            >
-              Join Waitlist
-            </Button>
-          </div>
-        </div>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0f]/40 to-[#0a0a0f]" />
 
-        {/* Right Column - Image (on desktop) */}
-        <div className="hidden lg:flex w-full lg:w-1/2 flex-col order-2">
-          <div className="w-full flex justify-center lg:justify-end">
-            <div className="w-full max-w-[336px] lg:max-w-[384px] rounded-2xl flex items-center justify-center overflow-hidden">
-              <img 
-                src={homeHeroImage} 
-                alt="Poonji AI-powered wealth building app showing financial growth projection on mobile phone" 
-                className="w-full h-auto object-contain rounded-2xl"
-              />
-            </div>
-          </div>
-        </div>
-        </div>
-      </section>
-
-      {/* What is Poonji Section */}
-      <section id="what-is-poonji" className="py-16 lg:py-24">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-center mb-12 lg:mb-16">
-            What is Poonji
-          </h2>
-          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-            {/* Carousel on Left */}
-            <div className="w-full lg:w-1/2 flex flex-col">
-              <div 
-                ref={scrollContainerRef}
-                className="overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
-              >
-                <div className="flex min-w-max">
-                  {graphs.map((graph, index) => (
-                    <div
-                      key={graph.id}
-                      ref={(el) => (graphRefs.current[index] = el)}
-                      className="flex-shrink-0 snap-center"
-                    >
-                      <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="mb-2 lg:mb-3">
-                          <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
-                            {graph.title}
-                          </h3>
-                          <p className="text-sm sm:text-base lg:text-lg text-foreground/80 mt-1 lg:mt-2">
-                            {graph.subtitle}
-                          </p>
-                        </div>
-                        {graph.renderVisual()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Pagination dots */}
-              <div className="flex justify-center gap-2 mt-6 lg:mt-8">
-                {graphs.map((graph, index) => {
-                  const isActive = index === activeGraph;
-                  return (
-                    <button
-                      key={graph.id}
-                      type="button"
-                      aria-label={`Go to graph ${index + 1}`}
-                      aria-pressed={isActive}
-                      onClick={() => scrollToGraph(index)}
-                      className={`h-3 w-3 rounded-full border transition-colors ${
-                        isActive
-                          ? "bg-primary border-primary"
-                          : "border-muted bg-transparent hover:border-primary/50"
-                      }`}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Text on Right */}
-            <div className="w-full lg:w-1/2 flex flex-col gap-6">
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
-                This is where your financial life comes together!
-              </h3>
-              <div className="space-y-4 text-base sm:text-lg lg:text-xl text-foreground/80 leading-relaxed">
-                <p>
-                  Not just another finance app to track things, not just to invest, 
-                  but to provide personalised insights and actionable strategies.
-                </p>
-                <p className="hidden lg:block">
-                  Poonji adapts to where you are in life. You can come here with questions. 
-                  With uncertainty. With big decisions and goals.                                                               
-                  Or just to check if you're on the right path.
-                </p>
-                <p className="hidden lg:block">
-                  It's a system that understands you, 
-                  supports you when things feel overwhelming, and helps you build calmer, 
-                  more intentional financial habits.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How it works Section */}
-      <section id="how-it-works" className="py-16 lg:py-24 bg-muted/30">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-center mb-12 lg:mb-16">
-            How it works?
-          </h2>
-
-          {/* First Section: Detailed Features */}
-          <div className="mb-12 lg:mb-16">
-            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-8 lg:mb-12">
-              Your Financial Life, Simplified
-            </h3>
-            <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-              {/* Image on Mobile (First) / Right on Desktop */}
-              <div className="w-1/2 lg:w-1/2 flex justify-center lg:justify-end mx-auto lg:mx-0 order-1 lg:order-2">
-                <div className="w-full max-w-[314px] lg:max-w-[358px] rounded-2xl flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={howItWorksImage} 
-                    alt="Poonji features" 
-                    className="w-full h-auto object-contain rounded-2xl"
-                  />
-                </div>
-              </div>
-
-              {/* Text on Mobile (Second) / Left on Desktop */}
-              <div className="w-full lg:w-1/2 flex flex-col gap-6 order-2 lg:order-1">
-                {/* Mobile: Bullet Points */}
-                <ul className="space-y-3 text-base sm:text-lg lg:hidden">
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-lg">•</span>
-                    <span className="text-foreground font-semibold">Secure Multi-Asset Integration</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-lg">•</span>
-                    <span className="text-foreground font-semibold">Proactive Analysis</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-lg">•</span>
-                    <span className="text-foreground font-semibold">Milestone-Based Guidance</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-lg">•</span>
-                    <span className="text-foreground font-semibold">Intelligent Vigilance</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-lg">•</span>
-                    <span className="text-foreground font-semibold">Ask Poonji Anything</span>
-                  </li>
-                </ul>
-                {/* Desktop: Bullet Points */}
-                <ul className="hidden lg:block space-y-3 text-base sm:text-lg lg:text-xl text-foreground/80">
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-xl">•</span>
-                    <span><strong className="text-foreground">Secure Multi-Asset Integration:</strong> Effortlessly connect your bank accounts, loans, and investment portfolios for a unified, real-time view of your net worth.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-xl">•</span>
-                    <span><strong className="text-foreground">Proactive Analysis:</strong> Poonji doesn't just show you where your money went; it analyzes your cash flow to find hidden opportunities, like accelerating a loan payoff.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-xl">•</span>
-                    <span><strong className="text-foreground">Milestone-Based Guidance:</strong> Replace overwhelming "challenges" with clear, goal-based targets for retirement, home ownership, or debt freedom.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-xl">•</span>
-                    <span><strong className="text-foreground">Intelligent Vigilance:</strong> Get proactive alerts the moment a milestone is within reach or when an action is needed to stay on track with your long-term risk profile.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-xl">•</span>
-                    <span><strong className="text-foreground">Ask Poonji Anything:</strong> From "Can I afford this car?" to "Explain this ETF," get instant, personalized advice that is grounded in your real financial data.</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Second Section: The One-Tap Promise */}
-          <div className="mb-12 lg:mb-16">
-            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-8 lg:mb-12">
-              The "One-Tap" Promise
-            </h3>
-            <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-              {/* Image on Mobile (First) / Left on Desktop */}
-              <div className="w-1/2 lg:w-1/2 flex justify-center lg:justify-start order-1 mx-auto lg:mx-0">
-                <div className="w-full max-w-[314px] lg:max-w-[358px] rounded-2xl flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={oneTapExecutionImage} 
-                    alt="One-tap action" 
-                    className="w-full h-auto object-contain rounded-2xl"
-                  />
-                </div>
-              </div>
-
-              {/* Text on Mobile (Second) / Right on Desktop */}
-              <div className="w-full lg:w-1/2 flex flex-col gap-6 order-2">
-                <p className="text-xl sm:text-2xl lg:text-3xl font-semibold text-foreground mb-4">
-                  From Advice to Action.
-                </p>
-                <div className="space-y-4 text-base sm:text-lg lg:text-xl text-foreground/80 leading-relaxed">
-                  <p>
-                    Most apps just give you a list of chores. Poonji gives you a solution. When our AI suggests a smarter move for your money, you can approve and execute it with a single tap. No jumping between banking apps. No second-guessing.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Third Section: Built for Trust, Not Guesses */}
-          <div>
-            <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-8 lg:mb-12">
-              Built for Trust, Not Guesses
-            </h3>
-            <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-              {/* Text on Left */}
-              <div className="w-full lg:w-1/2 flex flex-col gap-6">
-                {/* Mobile: Bullet Points (Title + First Sentence) */}
-                <ul className="space-y-3 text-base sm:text-lg lg:hidden">
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-lg">•</span>
-                    <span><strong className="text-foreground">Reasoning-First AI:</strong> Unlike generic chatbots, Poonji uses a sophisticated architecture to manage multi-step financial workflows.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-lg">•</span>
-                    <span><strong className="text-foreground">Safety Guardrails:</strong> It operates within your personal financial rules, goals, and risk limits.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-lg">•</span>
-                    <span><strong className="text-foreground">Actionable Explainability:</strong> It never suggests or executes actions outside your profile.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-lg">•</span>
-                    <span><strong className="text-foreground">Safe Execution:</strong> Once you approve, the system securely executes the action, so you never have to jump between multiple bank apps.</span>
-                  </li>
-                </ul>
-                {/* Desktop: Bullet Points (Full Content) */}
-                <ul className="hidden lg:block space-y-3 text-base sm:text-lg lg:text-xl text-foreground/80">
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-xl">•</span>
-                    <span><strong className="text-foreground">Reasoning-First AI:</strong> Unlike generic chatbots, Poonji uses a sophisticated architecture to manage multi-step financial workflows.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-xl">•</span>
-                    <span><strong className="text-foreground">Safety Guardrails:</strong> It operates within your personal financial rules, goals, and risk limits. Every suggestion passes through rigorous Core AI Nodes including dedicated Guardrails and Decision-Making modules, before it reaches you.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-xl">•</span>
-                    <span><strong className="text-foreground">Actionable Explainability:</strong> It never suggests or executes actions outside your profile. We don't just give a number; the system generates clear explanations and actionable cards for your review, so you understand the "why".</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-primary mt-1 text-xl">•</span>
-                    <span><strong className="text-foreground">Safe Execution:</strong> Once you approve, the system securely executes the action, so you never have to jump between multiple bank apps. Every recommendation is based on your real financial data and constraints.</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Image on Right */}
-              <div className="w-1/2 lg:w-1/2 flex justify-center lg:justify-end mx-auto lg:mx-0">
-                <div className="w-full max-w-[1570px] lg:max-w-[1790px] rounded-2xl flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={builtForTrustImage} 
-                    alt="Built for trust" 
-                    className="w-full h-auto object-contain rounded-2xl"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Why did we create it Section */}
-      <section id="why-we-created-it" className="py-16 lg:py-24">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-center mb-12 lg:mb-16">
-            Why did we create it?
-          </h2>
-
-          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12 mb-12 lg:mb-16">
-            {/* Text on Left */}
-            <div className="w-full lg:w-1/2 flex flex-col gap-6">
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
-                Bridge the gap of Financial Literacy
-              </h3>
-              <div className="space-y-4 text-base sm:text-lg lg:text-xl text-foreground/80 leading-relaxed">
-                <p>
-                  You're expected to make life-changing financial decisions the moment you graduate, yet you're often left to navigate the complexity of adulthood alone. From balancing education loans and new salaries to planning for a first home or a wedding, the weight of these milestones can feel paralyzing. We built Poonji because we believe financial decisions shouldn't feel like walking in the dark.
-                </p>
-                <p>
-                  Our mission is to provide every young adult with an institutional-grade financial guardian, an Agentic AI that doesn't just track your money, but actively protects and guides your journey 24/7. We envision a future where financial confidence is a right, not a privilege. By breaking massive goals into achievable milestones, we empower you to build habit-forming education, ensuring that as you grow, your wealth and your wisdom grow with you.
-                </p>
-              </div>
-            </div>
-
-            {/* Image on Right */}
-            <div className="w-full lg:w-1/2 flex justify-center lg:justify-end">
-              <div className="w-full max-w-md lg:max-w-lg rounded-2xl flex items-center justify-center overflow-hidden">
-                <img 
-                  src={whyDidWeCreateItImage} 
-                  alt="Financial literacy and security" 
-                  className="w-full h-auto object-contain rounded-2xl"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Us Section */}
-      <section id="contact-us" className="py-16 lg:py-24 bg-muted/30">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-center mb-8 lg:mb-12">
-            Contact Us
-          </h2>
-          <div className="flex flex-col items-center gap-6">
-            <p className="text-base sm:text-lg lg:text-xl text-foreground/80 text-center max-w-2xl">
-              Have questions or want to learn more? We'd love to hear from you.
+          <div className="relative z-10 container mx-auto flex min-h-[calc(92vh-5rem)] max-w-5xl flex-col justify-center px-4 py-16 sm:px-6 lg:px-8">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-[hsl(var(--accent))] sm:text-sm">
+              Event-linked credit infrastructure
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto h-12 sm:h-14 text-base sm:text-lg rounded-2xl border-primary text-primary hover:bg-primary hover:text-primary-foreground px-6 sm:px-8"
-                onClick={() => navigate("/contact")}
+
+            <h1 className="landing-reveal-headline font-display mt-5 max-w-4xl text-4xl leading-[1.08] text-[var(--landing-text)] sm:text-5xl md:text-6xl lg:text-7xl">
+              Prediction Markets.
+              <br />
+              Institutional Grade.
+            </h1>
+
+            <p className="landing-reveal-subheadline mt-6 max-w-2xl text-base leading-relaxed text-[var(--landing-text-muted)] sm:text-lg lg:text-xl">
+              Poonji wraps event-driven exposure into principal-protected structured bonds —
+              tradable instruments that fit inside existing mandates, risk frameworks, and balance
+              sheets.
+            </p>
+
+            <div className="landing-reveal-cta mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={() => scrollToSection("request-access")}
+                className="landing-glow-btn rounded-sm px-8 py-3.5 font-mono text-sm uppercase tracking-wider"
               >
-                Contact Us
-              </Button>
-              <Button
-                variant="default"
-                className="w-full sm:w-auto h-12 sm:h-14 text-base sm:text-lg rounded-2xl px-6 sm:px-8"
-                onClick={() => navigate("/waitlist")}
+                Request Access
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollToSection("problem")}
+                className="landing-ghost-btn rounded-sm px-8 py-3.5 font-mono text-sm uppercase tracking-wider"
               >
-                Join Waitlist
-              </Button>
+                Learn More ↓
+              </button>
+            </div>
+
+            <div
+              className="mt-14 h-px w-full max-w-md"
+              style={{
+                background: `linear-gradient(90deg, transparent, hsl(var(--primary)), hsl(var(--accent)), transparent)`,
+                boxShadow: "0 0 20px hsl(var(--primary) / 0.4)",
+              }}
+              aria-hidden
+            />
+          </div>
+        </section>
+
+        <EventTicker />
+
+        {/* Problem */}
+        <SectionReveal id="problem" className="border-b border-[hsl(var(--primary)/0.12)]">
+          <div className="container mx-auto max-w-5xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-[hsl(var(--accent))]">
+              The Problem
+            </p>
+            <div className="mt-8 flex gap-6 sm:gap-8">
+              <div className="landing-accent-rule shrink-0 self-stretch min-h-[120px]" aria-hidden />
+              <blockquote className="font-display text-2xl leading-snug text-[var(--landing-text)] sm:text-3xl lg:text-4xl lg:leading-snug">
+                Institutions want to express macro and geopolitical views directly. But binary,
+                all-or-nothing prediction market contracts don&apos;t fit institutional mandates,
+                compliance structures, or risk frameworks.
+              </blockquote>
             </div>
           </div>
-        </div>
-      </section>
+        </SectionReveal>
 
-      {/* Footer */}
-      <footer className="py-6 lg:py-8 border-t border-border/50 bg-background w-full">
-        <div className="w-full px-4 sm:px-6 lg:px-12">
-          <p className="text-sm sm:text-base lg:text-lg text-foreground/70 italic text-center">
-            <strong className="text-foreground">Your Security is our Foundation</strong> Poonji uses bank-grade encryption and strict privacy protocols. Your data is normalized into secure context packets, ensuring your personal information is never used to "train" public AI models.
-          </p>
+        {/* Solution */}
+        <SectionReveal id="solution" className="border-b border-[hsl(var(--primary)/0.12)] bg-[var(--landing-surface)]">
+          <div className="container mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-[hsl(var(--accent))]">
+              The Solution
+            </p>
+            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {solutionTiles.map((tile) => (
+                <article key={tile.title} className="landing-solution-card p-6 sm:p-8">
+                  <span className="font-mono text-lg text-[hsl(var(--primary))]" aria-hidden>
+                    ⬡
+                  </span>
+                  <h3 className="mt-4 font-display text-xl text-[var(--landing-text)]">{tile.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--landing-text-muted)]">
+                    {tile.description}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </SectionReveal>
+
+        {/* How It Works */}
+        <SectionReveal id="how-it-works" className="border-b border-[hsl(var(--primary)/0.12)]">
+          <div className="container mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-[hsl(var(--accent))]">
+              How It Works
+            </p>
+            <p className="mt-3 max-w-2xl text-sm text-[var(--landing-text-muted)]">
+              From event selection to coupon settlement — a principal-protected bond pathway built
+              for institutional workflows.
+            </p>
+            <Suspense fallback={<div className="mt-12 h-32 animate-pulse bg-[var(--landing-surface)]" />}>
+              <BondFlowDiagram />
+            </Suspense>
+          </div>
+        </SectionReveal>
+
+        {/* Why Poonji */}
+        <SectionReveal id="why-poonji" className="border-b border-[hsl(var(--primary)/0.12)] bg-[var(--landing-surface)]">
+          <div className="container mx-auto max-w-5xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-[hsl(var(--accent))]">
+              Why Poonji
+            </p>
+            <p className="mt-6 font-display text-xl leading-relaxed text-[var(--landing-text)] sm:text-2xl lg:text-3xl">
+              Our edge is the infrastructure — market structure, legal structuring, and regulatory
+              precedent required to make event-linked credit products institutionally investable.
+            </p>
+            <Suspense fallback={<div className="mt-12 h-40 animate-pulse bg-[#0a0a0f]" />}>
+              <MetricCounters />
+            </Suspense>
+          </div>
+        </SectionReveal>
+
+        {/* Team */}
+        <SectionReveal id="team" className="border-b border-[hsl(var(--primary)/0.12)]">
+          <div className="container mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-[hsl(var(--accent))]">
+              Team
+            </p>
+            <div className="mt-10 grid gap-6 sm:grid-cols-2">
+              <Suspense
+                fallback={
+                  <>
+                    <div className="h-48 animate-pulse bg-[var(--landing-surface)]" />
+                    <div className="h-48 animate-pulse bg-[var(--landing-surface)]" />
+                  </>
+                }
+              >
+                {team.map((member) => (
+                  <TeamCard key={member.name} {...member} />
+                ))}
+              </Suspense>
+            </div>
+          </div>
+        </SectionReveal>
+
+        {/* Request Access */}
+        <SectionReveal id="request-access">
+          <div className="container mx-auto max-w-lg px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+            <div className="border border-[hsl(var(--primary)/0.25)] bg-[var(--landing-surface-elevated)] p-8 shadow-[0_0_40px_hsl(var(--primary)/0.08)] sm:p-10">
+              <h2 className="font-display text-center text-2xl text-[var(--landing-text)] sm:text-3xl">
+                Request Access
+              </h2>
+              <p className="mt-2 text-center text-sm text-[var(--landing-text-muted)]">
+                Built for institutional investors.
+              </p>
+              <div className="mt-8 [&_label]:text-[var(--landing-text-muted)] [&_input]:border-[hsl(var(--primary)/0.25)] [&_input]:bg-[#0a0a0f] [&_input]:text-[var(--landing-text)] [&_button]:landing-glow-btn [&_button]:rounded-sm [&_button]:font-mono [&_button]:uppercase [&_button]:tracking-wider">
+                <AccessRequestForm />
+              </div>
+              <p className="mt-4 text-center font-mono text-[10px] text-[var(--landing-text-muted)] sm:text-xs">
+                We&apos;ll be in touch within 48 hours.
+              </p>
+            </div>
+          </div>
+        </SectionReveal>
+      </main>
+
+      <footer className="border-t border-[hsl(var(--primary)/0.12)] bg-[#06060a]">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-6 sm:flex-row sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2">
+            <Logo className="h-7 w-7" />
+            <span className="font-mono text-xs text-[var(--landing-text-muted)]">poonji.ai</span>
+          </div>
+          <p className="font-mono text-xs text-[var(--landing-text-muted)]">© 2026 Poonji</p>
+          <nav className="flex items-center gap-6 font-mono text-xs text-[var(--landing-text-muted)]">
+            <a
+              href="mailto:legal@poonji.ai?subject=Privacy%20Policy"
+              className="transition-colors hover:text-[hsl(var(--accent))]"
+            >
+              Privacy Policy
+            </a>
+            <a
+              href="mailto:legal@poonji.ai?subject=Terms%20of%20Service"
+              className="transition-colors hover:text-[hsl(var(--accent))]"
+            >
+              Terms of Service
+            </a>
+          </nav>
         </div>
       </footer>
     </div>
