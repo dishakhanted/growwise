@@ -34,7 +34,15 @@ function getApiErrorMessage(errorResponse: { error?: string; message?: string })
   return errorResponse.error || errorResponse.message || "Something went wrong. Please try again.";
 }
 
-export const AccessRequestForm = () => {
+interface AccessRequestFormProps {
+  submitLabel?: string;
+  emailPlaceholder?: string;
+}
+
+export const AccessRequestForm = ({
+  submitLabel = "Request Access",
+  emailPlaceholder = "Work email",
+}: AccessRequestFormProps) => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -186,7 +194,7 @@ export const AccessRequestForm = () => {
             if (status?.type === "error") setStatus(null);
           }}
           required
-          placeholder="Work email"
+          placeholder={emailPlaceholder}
           className="h-12"
         />
       </div>
@@ -202,7 +210,7 @@ export const AccessRequestForm = () => {
         className="w-full h-12 text-base font-semibold"
         disabled={isSubmitting || !waitlistSupabaseUrl || (USE_TURNSTILE && !turnstileToken)}
       >
-        {isSubmitting ? "Submitting..." : "Request Access"}
+        {isSubmitting ? "Submitting..." : submitLabel}
       </Button>
 
       {status && (
