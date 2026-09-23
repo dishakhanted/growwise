@@ -17,9 +17,8 @@ html, body { background: #0a0e0d; }
   gap: 24px;
 }
 .landing-header { min-height: 112px; border-bottom: 1px solid #26332c; }
-.landing-brand { display: inline-flex; align-items: center; gap: 12px; font-size: 24px; letter-spacing: -.06em; }
-.landing-status, .landing-eyebrow { font-family: "JetBrains Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: .15em; }
-.landing-status { color: var(--landing-muted); }
+.landing-brand { display: inline-flex; align-items: center; gap: 12px; font-family: "Instrument Serif", Georgia, serif; font-size: 36px; font-weight: 400; letter-spacing: -.025em; }
+.landing-eyebrow { font-family: "JetBrains Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: .15em; }
 .landing-main { flex: 1; padding: clamp(72px, 12vh, 150px) 0; max-width: 1060px; }
 .landing-eyebrow { color: #c9b779; margin-bottom: 32px; line-height: 1.8; }
 .landing-main h1 { font-family: "Instrument Serif", Georgia, serif; font-size: clamp(46px, 6.8vw, 100px); line-height: 1.04; font-weight: 400; letter-spacing: -.035em; margin: 0 0 36px; }
@@ -31,15 +30,12 @@ html, body { background: #0a0e0d; }
 .landing-contact span { font-size: 20px; }
 .landing-page a:focus-visible { outline: 2px solid #c9b779; outline-offset: 6px; }
 .landing-footer { border-top: 1px solid #26332c; min-height: 92px; color: var(--landing-muted); font-size: 11px; line-height: 1.7; }
-.landing-footer > span { font-size: 13px; color: var(--landing-text); }
-.landing-footer p { max-width: 490px; text-align: right; }
+.landing-footer > span { font-family: "Instrument Serif", Georgia, serif; font-size: 22px; color: var(--landing-text); }
 .landing-skip { position: absolute; left: 24px; top: -80px; background: #eeeFE8; color: #0a0e0d; padding: 12px; z-index: 10; }
 .landing-skip:focus { top: 16px; }
 @media (max-width: 600px) {
   .landing-header { min-height: 88px; gap: 12px; }
-  .landing-status { font-size: 9px; letter-spacing: .08em; }
   .landing-main { padding: 68px 0 76px; }
   .landing-eyebrow { font-size: 9px; margin-bottom: 26px; }
   .landing-footer { align-items: flex-start; flex-direction: column; gap: 10px; padding: 24px 0; }
-  .landing-footer p { text-align: left; max-width: 330px; }
 }
