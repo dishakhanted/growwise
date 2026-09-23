@@ -1,23 +1,15 @@
 # Poonji
 
-Institutional landing site for [poonji.ai](https://poonji.ai) — prediction markets through principal-protected structured bonds.
+Minimal public landing page for [poonji.ai](https://www.poonji.ai), introducing Poonji’s event-conditioned derivatives direction and long-term vision.
 
-The previous consumer fintech app (AI personal finance coach) is preserved on the [`legacy`](https://github.com/dishakhanted/growwise/tree/legacy) branch.
+The public page contains only positioning and an email contact. Product mechanics, illustrative pricing, metrics, and roadmaps are intentionally excluded from the page and its metadata. Legacy components remain in source but are not imported by the landing page.
 
 ## Development
 
 ```bash
-npm install
+npm ci
 npm run dev
+npm run build
 ```
 
-### Environment variables
-
-- `VITE_WAITLIST_SUPABASE_URL` — Supabase project URL for early-access submissions
-- `VITE_TURNSTILE_SITE_KEY` — Cloudflare Turnstile site key (optional in local dev)
-
-## Tech stack
-
-- React + TypeScript + Vite
-- Tailwind CSS + shadcn/ui
-- Supabase Edge Functions (`waitlist-submit` for access requests)
+React, TypeScript, Vite, and Tailwind CSS. Existing Vercel configuration is preserved. The landing page does not require environment variables or a backend.
