@@ -9,7 +9,6 @@ const Landing = () => (
         <Logo className="h-10 w-10" />
         <span>poonji</span>
       </a>
-      <span className="landing-status">Building in stealth</span>
     </header>
 
     <main id="main" className="landing-main">
@@ -29,7 +28,6 @@ const Landing = () => (
 
     <footer className="landing-footer">
       <span>Poonji</span>
-      <p>In development. Not an offer or solicitation to buy or sell financial products.</p>
     </footer>
   </div>
 );
