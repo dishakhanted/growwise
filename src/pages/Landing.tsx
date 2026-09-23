@@ -14,8 +14,8 @@ const Landing = () => (
       <h1>Events already move markets.<br /><em>Now, trade the relationship.</em></h1>
       <div className="landing-copy">
         <p className="landing-intro">
-          Poonji is building event-conditioned derivatives that let institutional
-          investors continuously trade the relationships between real-world events
+          Poonji is building a platform for event-conditioned derivatives, enabling
+          institutional investors to continuously trade the relationships between real-world events
           and financial assets.
         </p>
         <p className="landing-vision">
