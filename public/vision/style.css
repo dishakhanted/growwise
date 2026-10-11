@@ -4,3 +4,9 @@
 .brand{font-family:"Helvetica Neue",Arial,sans-serif;letter-spacing:-1.5px;color:#234b3c}.brand img{filter:none;width:36px;height:39px}.brand-dot{display:none}h1,h2{font-family:"Helvetica Neue",Arial,sans-serif}.silver{background-image:linear-gradient(110deg,#edf3ef,#dce5df 45%,#b6c5bd)}
 
 .live-dot{background:#234b3c;box-shadow:0 0 14px #234b3c}.pill{border-color:#234b3c;background:#234b3c15}.pill:hover{border-color:#437d64;background:#234b3c40}.pill span,em,.cross{color:#6d9c82}.silver{background-image:linear-gradient(110deg,#edf3ef,#b6c5bd 50%,#6d9c82)}
+
+.era-burst{position:fixed;inset:0;width:100%;height:100%;z-index:100;pointer-events:none}
+html.era-transitioning{scroll-behavior:auto}
+html.era-transitioning #universe{opacity:.2;transition:opacity .15s}
+#vision:focus{outline:none}
+@media(prefers-reduced-motion:reduce){.era-burst{display:none}}

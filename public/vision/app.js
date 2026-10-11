@@ -57,3 +57,112 @@
   document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
   resize();if(!motion.matches)draw();
 })();
+
+// A single, interruptible transition from the hero into the vision.
+(() => {
+  const trigger = document.querySelector('.hero .pill[href="#vision"]');
+  const destination = document.getElementById('vision');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  let finishTransition = null;
+  if (!trigger || !destination) return;
+
+  function arrive() {
+    destination.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+    destination.setAttribute('tabindex', '-1');
+    destination.focus({ preventScroll: true });
+    if (location.hash !== '#vision') history.pushState(null, '', '#vision');
+  }
+
+  trigger.addEventListener('click', event => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (finishTransition) return;
+    const targetY = () => Math.max(0, scrollY + destination.getBoundingClientRect().top - 70);
+    if (reduced.matches) {
+      window.scrollTo({ top: targetY(), behavior: 'instant' });
+      arrive();
+      return;
+    }
+    const layer = document.createElement('canvas');
+    layer.className = 'era-burst';
+    layer.setAttribute('aria-hidden', 'true');
+    const paint = layer.getContext('2d');
+    if (!paint) {
+      destination.scrollIntoView({ behavior: 'smooth' });
+      arrive();
+      return;
+    }
+    const width = innerWidth, height = innerHeight;
+    const scale = Math.min(devicePixelRatio || 1, 2);
+    layer.width = width * scale; layer.height = height * scale;
+    paint.scale(scale, scale);
+    document.body.appendChild(layer);
+    document.documentElement.classList.add('era-transitioning');
+    const startY = scrollY, endY = targetY(), started = performance.now();
+    const count = width < 700 ? 110 : 200;
+    const particles = Array.from({ length: count }, (_, i) => ({
+      angle: i * 2.399963,
+      depth: .12 + Math.random() * .88,
+      speed: .65 + Math.random() * .5,
+      bright: i % 5 === 0
+    }));
+    let animation;
+    const finish = () => {
+      cancelAnimationFrame(animation);
+      layer.remove();
+      window.scrollTo({ top: targetY(), behavior: 'instant' });
+      document.documentElement.classList.remove('era-transitioning');
+      removeEventListener('resize', finish);
+      document.removeEventListener('visibilitychange', onVisibility);
+      reduced.removeEventListener('change', finish);
+      finishTransition = null;
+      arrive();
+    };
+    const onVisibility = () => { if (document.hidden) finish(); };
+    finishTransition = finish;
+    addEventListener('resize', finish, { once: true });
+    document.addEventListener('visibilitychange', onVisibility);
+    reduced.addEventListener('change', finish, { once: true });
+    function tick(now) {
+      const t = Math.min(1, (now - started) / 1100);
+      const envelope = Math.pow(Math.sin(t * Math.PI), 1.4);
+      paint.clearRect(0, 0, width, height);
+      // A dark optical tunnel, with fine projected lines rather than tumbling blocks.
+      paint.globalAlpha = envelope * .88;
+      paint.fillStyle = '#020a07'; paint.fillRect(0, 0, width, height);
+      const ox = width * .53, oy = height * .46;
+      const reach = Math.hypot(width, height) * .75;
+      const acceleration = t * t * 1.7;
+      for (const p of particles) {
+        const depth = (p.depth + acceleration * p.speed) % 1;
+        const distance = .045 + depth * depth;
+        const r = distance * reach;
+        const length = (8 + depth * depth * 160) * envelope;
+        const dx = Math.cos(p.angle), dy = Math.sin(p.angle);
+        const x = ox + dx * r, y = oy + dy * r;
+        const trail = paint.createLinearGradient(x - dx * length, y - dy * length, x, y);
+        trail.addColorStop(0, 'rgba(35,75,60,0)');
+        trail.addColorStop(1, p.bright ? '#a4cdb4' : '#377657');
+        paint.globalAlpha = envelope * (.15 + depth * .65);
+        paint.strokeStyle = trail;
+        paint.lineWidth = p.bright ? 1 : .55;
+        paint.beginPath(); paint.moveTo(x - dx * length, y - dy * length);
+        paint.lineTo(x, y); paint.stroke();
+      }
+      // Sparse elliptical scan rings expand smoothly from the vanishing point.
+      for (let i = 0; i < 3; i++) {
+        const phase = (i / 3 + acceleration * .3) % 1;
+        const r = (phase * phase + .03) * reach;
+        paint.globalAlpha = envelope * (1 - phase) * .25;
+        paint.strokeStyle = '#6d9c82'; paint.lineWidth = .7;
+        paint.beginPath(); paint.ellipse(ox, oy, r, r * .62, -.18, 0, Math.PI * 2); paint.stroke();
+      }
+      paint.globalAlpha = 1;
+      const progress = Math.max(0, Math.min(1, (t - .16) / .68));
+      const ease = progress * progress * (3 - 2 * progress);
+      window.scrollTo({ top: startY + (endY - startY) * ease, behavior: 'instant' });
+      if (t < 1) animation = requestAnimationFrame(tick); else finish();
+    }
+    animation = requestAnimationFrame(tick);
+  });
+})();
