@@ -19,9 +19,9 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         name: 'Poonji',
         short_name: 'Poonji',
-        description: 'A new dimension of financial markets.',
-        theme_color: '#0a0e0d',
-        background_color: '#0a0e0d',
+        description: 'Wall Street for AI Agents. A new financial era.',
+        theme_color: '#030706',
+        background_color: '#030706',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
