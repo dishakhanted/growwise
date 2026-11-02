@@ -10,3 +10,5 @@ html.era-transitioning{scroll-behavior:auto}
 html.era-transitioning #universe{opacity:.2;transition:opacity .15s}
 #vision:focus{outline:none}
 @media(prefers-reduced-motion:reduce){.era-burst{display:none}}
+
+.trading-lab-link{margin-left:16px}@media(max-width:600px){.trading-lab-link{margin-left:0;margin-top:14px}}
