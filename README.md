@@ -23,7 +23,7 @@ npm run build
 npm run preview
 ```
 
-The production output is `dist/`. Check the homepage, the “Enter the next era” anchor, contact links, narrow screens, and reduced-motion behavior when changing the design. There is no automated browser test suite.
+The production output is `dist/`. Check the homepage, the trading lab link, contact links, narrow screens, and reduced-motion behavior when changing the design. There is no automated browser test suite.
 
 ## Where to edit
 
